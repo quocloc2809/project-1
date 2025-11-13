@@ -4,8 +4,9 @@ const bodyParser = require('body-parser');
 require('dotenv').config();
 
 const database = require('./config/database');
-const documentsRoutes = require('./routes/documents');
-const statisticsRoutes = require('./routes/statistics');
+const documentsRoutes = require('./routes/incoming-documents');
+const outgoingDocumentsRoutes = require('./routes/outgoing-documents');
+const departmentsRoutes = require('./routes/departments');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,14 +32,16 @@ app.get('/', (req, res) => {
         message: 'API Văn Phòng Điện Tử đang hoạt động!',
         version: '1.0.0',
         endpoints: {
-            documents: '/api/documents',
-            statistics: '/api/statistics'
+            documents: '/api/incoming-documents',
+            outgoingDocuments: '/api/outgoing-documents',
+            departments: '/api/departments'
         }
     });
 });
 
-app.use('/api/documents', documentsRoutes);
-app.use('/api/statistics', statisticsRoutes);
+app.use('/api/incoming-documents', documentsRoutes);
+app.use('/api/outgoing-documents', outgoingDocumentsRoutes);
+app.use('/api/departments', departmentsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -67,15 +70,6 @@ async function startServer() {
         // Khởi động server
         app.listen(PORT, () => {
             console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
-            console.log(`📊 API Endpoints:`);
-            console.log(`   - GET  /api/documents      - Lấy danh sách công văn`);
-            console.log(`   - POST /api/documents      - Tạo công văn mới`);
-            console.log(`   - GET  /api/documents/:id  - Lấy chi tiết công văn`);
-            console.log(`   - PUT  /api/documents/:id  - Cập nhật công văn`);
-            console.log(`   - DELETE /api/documents/:id - Xóa công văn`);
-            console.log(`   - GET  /api/statistics     - Thống kê trạng thái`);
-            console.log(`   - GET  /api/statistics/monthly - Thống kê theo tháng`);
-            console.log(`   - GET  /api/statistics/department - Thống kê theo phòng ban`);
         });
     } catch (error) {
         console.error('❌ Lỗi khởi động server:', error);

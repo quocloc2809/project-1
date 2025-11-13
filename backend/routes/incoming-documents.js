@@ -7,7 +7,7 @@ const COLUMN_SETS = {
     MAIN_VIEW: [
         'DocumentID', 'DocumentNo', 'CreatedDate', 'DocumentSummary', 'UpdatedDate',
         'ExpiredDate', 'AssignedReviewedFullname', 'Status',
-        'IssuedOrganizationGroupID', 'SentOrganizationGroupID', 'IssuedOrganizationID', 'ReviewNote'
+        'AssignedGroupID', 'AssignedUserID', 'ReviewNote'
     ],
 
     DETAIL: '*'
@@ -23,14 +23,60 @@ router.get('/', async (req, res) => {
         const columnStr = Array.isArray(columns) ? columns.join(', ') : columns;
 
         const result = await pool.request().query(`
-            SELECT ${columnStr}
-            FROM dbo.WF_Incoming_Docs
-            ORDER BY CreatedDate DESC
-        `);
+            SELECT DISTINCT
+                doc.DocumentID, 
+                doc.DocumentNo, 
+                doc.CreatedDate, 
+                doc.DocumentSummary, 
+                doc.UpdatedDate,
+                doc.ExpiredDate, 
+                doc.AssignedReviewedFullname, 
+                doc.Status,
+                doc.AssignedGroupID, 
+                doc.CompletedDate, 
+                doc.ReviewNote,
+                doc.OutGoingDocs,
+                COALESCE((SELECT TOP 1 GroupName FROM dbo.Core_V_Users WHERE GroupID = doc.AssignedGroupID), '') as GroupName
+            FROM dbo.WF_Incoming_Docs doc
+            ORDER BY doc.CreatedDate DESC
+        `)
+
+        const rows = result.recordset || [];
+
+        // Leader (lãnh đạo bút phê) logic: use AssignedReviewedFullname
+        // If AssignedReviewedFullname is null/empty => chưa bút phê, otherwise đã bút phê.
+        const leaderField = 'AssignedReviewedFullname';
+        const leaderDone = rows.reduce((acc, r) => {
+            const val = r[leaderField] ?? r[leaderField.toLowerCase()] ?? r[leaderField.toUpperCase()];
+            return acc + ((val !== null && val !== undefined && String(val).trim() !== '') ? 1 : 0);
+        }, 0);
+        const leaderUndone = Math.max(0, rows.length - leaderDone);
+
+        // Office logic: use CompletedDate instead of Status
+        // If CompletedDate is present => processed; if null/empty => unprocessed
+        const processed = rows.reduce((acc, r) => (r.CompletedDate ? acc + 1 : acc), 0);
+        const unprocessed = rows.reduce((acc, r) => (!r.CompletedDate ? acc + 1 : acc), 0);
+
+        const statsObj = {
+            leader: {
+                column: leaderField,
+                done: leaderDone,
+                undone: leaderUndone,
+                total: rows.length
+            },
+            office: {
+                processed: processed,
+                unprocessed: unprocessed,
+                total: rows.length
+            }
+        };
+
+        console.log('Computed incoming-documents stats:', statsObj);
 
         res.json({
             success: true,
-            data: result.recordset,
+            data: rows,
+            stats: statsObj,
             view: view,
             columns_used: Array.isArray(columns) ? columns : 'all'
         });
@@ -74,34 +120,18 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// PUT - Cập nhật trạng thái và ghi chú công văn
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { Status, ReviewNote } = req.body;
-
-        console.log('PUT /api/documents/:id - Request params:', { id });
-        console.log('PUT /api/documents/:id - Request body:', { Status, ReviewNote });
+        const { ReviewNote, OutgoingDocs } = req.body;
 
         const pool = database.getPool();
 
-        // Chuyển đổi Status từ text sang số (0: Chưa hoàn thành, 1: Đã hoàn thành)
-        let statusValue = 0;
-        if (Status === 'Đã hoàn thành' || Status === '1' || Status === 1) {
-            statusValue = 1;
-        }
-
-        console.log('PUT /api/documents/:id - Status value:', statusValue);
-
-        // Kiểm tra xem document có tồn tại không trước khi update
         const checkResult = await pool.request()
             .input('checkId', sql.Int, id)
             .query('SELECT DocumentID FROM dbo.WF_Incoming_Docs WHERE DocumentID = @checkId');
 
-        console.log('PUT /api/documents/:id - Check result:', checkResult.recordset);
-
         if (checkResult.recordset.length === 0) {
-            console.log('PUT /api/documents/:id - Document not found for ID:', id);
             return res.status(404).json({
                 success: false,
                 message: 'Không tìm thấy công văn để cập nhật',
@@ -111,17 +141,19 @@ router.put('/:id', async (req, res) => {
 
         const result = await pool.request()
             .input('id', sql.Int, id)
-            .input('status', sql.Int, statusValue)
             .input('reviewNote', sql.NVarChar(sql.MAX), ReviewNote || '')
+            .input('outgoingDocs', sql.NVarChar(50), OutgoingDocs || null)
             .query(`
                 UPDATE dbo.WF_Incoming_Docs SET
-                    Status = @status,
+                    /* Status is 1 when there's an outgoing document OR a non-empty review note */
+                    Status = CASE WHEN ( (@outgoingDocs IS NOT NULL AND LTRIM(RTRIM(@outgoingDocs)) <> '') OR ( @reviewNote IS NOT NULL AND LTRIM(RTRIM(@reviewNote)) <> '' ) ) THEN 1 ELSE 0 END,
                     ReviewNote = @reviewNote,
-                    UpdatedDate = GETDATE()
+                    OutgoingDocs = @outgoingDocs,
+                    UpdatedDate = GETDATE(),
+                    /* CompletedDate set when there's an outgoing document or a review note */
+                    CompletedDate = CASE WHEN ( (@outgoingDocs IS NOT NULL AND LTRIM(RTRIM(@outgoingDocs)) <> '') OR ( @reviewNote IS NOT NULL AND LTRIM(RTRIM(@reviewNote)) <> '' ) ) THEN GETDATE() ELSE CompletedDate END
                 WHERE DocumentID = @id
             `);
-
-        console.log('PUT /api/documents/:id - Update result:', result);
 
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({
@@ -130,12 +162,18 @@ router.put('/:id', async (req, res) => {
             });
         }
 
+        // Return updated fields (including CompletedDate)
+        const updated = await pool.request()
+            .input('id', sql.Int, id)
+            .query('SELECT Status, ReviewNote, OutgoingDocs, CompletedDate FROM dbo.WF_Incoming_Docs WHERE DocumentID = @id');
+
         res.json({
             success: true,
             message: 'Cập nhật công văn thành công',
-            data: {
-                Status: statusValue,
-                ReviewNote: ReviewNote || ''
+            data: updated.recordset[0] || {
+                Status: null,
+                ReviewNote: ReviewNote || '',
+                OutgoingDocs: OutgoingDocs || null
             }
         });
     } catch (error) {

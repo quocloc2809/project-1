@@ -1,0 +1,107 @@
+/* Search Container */
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 400px !important;
+    max-width: 400px !important;
+    min-width: 250px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px 8px 38px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 13px;
+    background-color: white;
+    color: #333;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-input::placeholder {
+    color: #999;
+}
+
+.search-icon-btn {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.search-icon-btn:hover {
+    background: #f0f0f0;
+    color: #007bff;
+}
+
+.clear-search-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.clear-search-btn:hover {
+    background: #5a6268;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .search-container {
+        width: 300px;
+        max-width: 300px;
+        min-width: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-container {
+        max-width: none;
+        width: 100%;
+        min-width: auto;
+    }
+}
