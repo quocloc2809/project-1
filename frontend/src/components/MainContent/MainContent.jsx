@@ -58,92 +58,91 @@ const MainContent = () => {
     }
 
     return (
-        <div className="main-content">
-            <div className="content-area-full">
-                <div className="content-header">
-                    <div className="header-left">
-                        <div className="tabs">
-                            <button
-                                className={`tab ${activeTab === 'documents' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('documents')}
-                            >
-                                Danh sách công văn
-                            </button>
-                            <button
-                                className={`tab ${activeTab === 'statistics' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('statistics')}
-                            >
-                                Thống kê trạng thái
-                            </button>
+        <div className="flex-1 p-6">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full backdrop-blur-sm bg-opacity-95">
+                <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 px-6 py-4 border-b border-purple-100">
+                    <div className="flex flex-wrap items-center gap-4 justify-between">
+                        <div className="flex items-center gap-4 flex-1 min-w-[450px]">
+                            <div className="inline-flex rounded-xl bg-white p-1.5 shadow-md border border-purple-200">
+                                <button
+                                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === 'documents'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg transform scale-105'
+                                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                                        }`}
+                                    onClick={() => setActiveTab('documents')}
+                                >
+                                    📄 Danh sách công văn
+                                </button>
+                                <button
+                                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === 'statistics'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg transform scale-105'
+                                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                                        }`}
+                                    onClick={() => setActiveTab('statistics')}
+                                >
+                                    📊 Thống kê trạng thái
+                                </button>
+                            </div>
+                            {activeTab === 'documents' && (
+                                <SearchBar
+                                    searchTerm={searchTerm}
+                                    onSearchChange={handleSearchChange}
+                                    onSearchSubmit={handleSearchSubmit}
+                                    onClearSearch={handleClearSearch}
+                                    placeholder="Tìm kiếm theo số hiệu hoặc trích yếu..."
+                                />
+                            )}
                         </div>
                         {activeTab === 'documents' && (
-                            <SearchBar
-                                searchTerm={searchTerm}
-                                onSearchChange={handleSearchChange}
-                                onSearchSubmit={handleSearchSubmit}
-                                onClearSearch={handleClearSearch}
-                                placeholder="Tìm kiếm theo số hiệu hoặc trích yếu..."
-                            />
-                        )}
-                    </div>
-                    {activeTab === 'documents' && (
-                        <div className="department-filter">
-                            <select
-                                id="department-select"
-                                value={selectedDepartment}
-                                onChange={handleDepartmentChange}
-                                className="department-select"
-                            >
-                                <option value="">-- Tất cả đơn vị --</option>
-                                {departments.map(dept => (
-                                    <option key={dept.GroupID} value={dept.GroupID}>
-                                        {dept.GroupName}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <select
+                                    value={selectedDepartment}
+                                    onChange={handleDepartmentChange}
+                                    className="px-4 py-2 text-sm border-2 border-purple-200 rounded-lg bg-white hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm hover:shadow-md"
+                                >
+                                    <option value="">🏢 Tất cả đơn vị</option>
+                                    {departments.map(dept => (
+                                        <option key={dept.GroupID} value={dept.GroupID}>
+                                            {dept.GroupName}
+                                        </option>
+                                    ))}
+                                </select>
 
-                            <select
-                                id="year-select"
-                                value={selectedYear}
-                                onChange={(e) => setSelectedYear(e.target.value)}
-                                className="department-select"
-                                style={{ minWidth: 120, marginLeft: 6 }}
-                            >
-                                <option value="">-- Tất cả năm --</option>
-                                {[2025, 2024, 2023, 2022, 2021].map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(e.target.value)}
+                                    className="px-4 py-2 text-sm border-2 border-purple-200 rounded-lg bg-white hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[120px] shadow-sm hover:shadow-md"
+                                >
+                                    <option value="">📅 Tất cả năm</option>
+                                    {[2025, 2024, 2023, 2022, 2021].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
 
-                            <select
-                                id="stats-filter"
-                                value={statsFilter}
-                                onChange={(e) => setStatsFilter(e.target.value)}
-                                className="department-select"
-                                style={{ minWidth: 200, marginLeft: 6 }}
-                            >
-                                <option value="">-- Không lọc --</option>
-                                <option value="leader_done">Văn bản đã bút phê</option>
-                                <option value="leader_undone">Văn bản chưa bút phê</option>
-                                <option value="office_processed">Văn bản đã xử lí</option>
-                                <option value="office_unprocessed">Văn bản chưa xử lí</option>
-                            </select>
+                                <select
+                                    value={statsFilter}
+                                    onChange={(e) => setStatsFilter(e.target.value)}
+                                    className="px-4 py-2 text-sm border-2 border-purple-200 rounded-lg bg-white hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[200px] shadow-sm hover:shadow-md"
+                                >
+                                    <option value="">🔍 Không lọc</option>
+                                    <option value="leader_done">✅ Văn bản đã bút phê</option>
+                                    <option value="leader_undone">⏳ Văn bản chưa bút phê</option>
+                                    <option value="office_processed">✔️ Văn bản đã xử lí</option>
+                                    <option value="office_unprocessed">⚠️ Văn bản chưa xử lí</option>
+                                </select>
 
-                            {/* Reset all filters button: appears only when any filter is active */}
-                            {(
-                                searchTerm || appliedSearchTerm || selectedDepartment || selectedYear || statsFilter
-                            ) && (
+                                {(searchTerm || appliedSearchTerm || selectedDepartment || selectedYear || statsFilter) && (
                                     <button
                                         onClick={resetAllFilters}
-                                        style={{ marginLeft: 12 }}
-                                        className="add-btn"
+                                        className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 rounded-lg hover:from-pink-600 hover:via-rose-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 transform hover:scale-105"
                                         title="Làm mới tất cả bộ lọc"
                                     >
-                                        Làm mới
+                                        🔄 Làm mới
                                     </button>
                                 )}
-                        </div>
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {activeTab === 'documents' && <DocumentsList searchTerm={appliedSearchTerm} selectedDepartment={selectedDepartment} selectedYear={selectedYear} statsFilter={statsFilter} clearStatsFilter={() => setStatsFilter('')} />}

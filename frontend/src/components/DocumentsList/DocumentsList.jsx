@@ -113,8 +113,6 @@ const EditModal = ({
 }) => {
     if (!showEditModal || !editingDocument) return null;
 
-    // status is derived from whether there's an outgoing document and is not editable
-
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -181,6 +179,41 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
     const [editingDocument, setEditingDocument] = useState(null)
     const [showEditModal, setShowEditModal] = useState(false)
     const itemsPerPage = 17
+
+
+
+    // Download associated file for a given document
+    function handleDownload(documentId, doc = {}) {
+        return (async () => {
+            try {
+                const resp = await fetch(`http://localhost:3001/api/files/download/${documentId}`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    alert(err.message || 'Không tìm thấy file để tải.');
+                    return;
+                }
+
+                const blob = await resp.blob();
+                // Try to read filename from content-disposition header
+                const cd = resp.headers.get('content-disposition') || '';
+                let filename = doc.DocumentNo ? `${doc.DocumentNo}` : `document_${documentId}`;
+                const m = /filename=?([^";]+)/.exec(cd);
+                if (m && m[1]) filename = m[1].replace(/"/g, '');
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Lỗi khi tải file: ' + (error.message || ''));
+            }
+        })();
+    }
 
     const tableColumns = [
         {
@@ -365,7 +398,7 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
         },
         {
             key: 'CompletedDate',
-            label: 'Ngày hoàn thành thực tế',
+            label: 'Ngày hoàn thành',
             width: '100px',
             render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : ''
         },
@@ -413,13 +446,22 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
             label: 'Thao tác',
             width: '80px',
             render: (value, doc) => (
-                <button
-                    className="action-btn edit-btn"
-                    onClick={() => handleEditClick(doc)}
-                    title="Sửa trạng thái và ghi chú"
-                >
-                    ✏️ Sửa
-                </button>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditClick(doc)}
+                        title="Sửa trạng thái và ghi chú"
+                    >
+                        ✏️
+                    </button>
+                    <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleDownload(doc.DocumentID, doc)}
+                        title="Tải file đính kèm"
+                    >
+                        ⬇️
+                    </button>
+                </div>
             )
         }
     ];

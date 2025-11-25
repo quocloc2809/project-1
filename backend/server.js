@@ -7,6 +7,8 @@ const database = require('./config/database');
 const documentsRoutes = require('./routes/incoming-documents');
 const outgoingDocumentsRoutes = require('./routes/outgoing-documents');
 const departmentsRoutes = require('./routes/departments');
+const filesRoutes = require('./routes/files');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,6 +44,8 @@ app.get('/', (req, res) => {
 app.use('/api/incoming-documents', documentsRoutes);
 app.use('/api/outgoing-documents', outgoingDocumentsRoutes);
 app.use('/api/departments', departmentsRoutes);
+app.use('/api/files', filesRoutes);
+app.use('/api/auth', authRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
