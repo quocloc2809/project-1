@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './DocumentsList.css'
+import Tooltip from '../Tooltip/Tooltip'
+import DataTable from '../common/DataTable/DataTable'
 
 const OutgoingDocumentCombobox = ({ onChange, value = '', placeholder = "Tìm kiếm văn bản đi..." }) => {
     const [searchTerm, setSearchTerm] = useState(value || '');
@@ -171,14 +173,12 @@ const EditModal = ({
     );
 };
 
-const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear = '', statsFilter = '' }) => {
+const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear = '', documentType = 'incoming' }) => {
     const [documents, setDocuments] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [currentPage, setCurrentPage] = useState(1)
     const [editingDocument, setEditingDocument] = useState(null)
     const [showEditModal, setShowEditModal] = useState(false)
-    const itemsPerPage = 17
 
 
 
@@ -215,69 +215,15 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
         })();
     }
 
-    const tableColumns = [
+    const tableColumns = documentType === 'outgoing' ? [
         {
             key: 'DocumentNo',
             label: 'Số hiệu',
             width: '100px',
             render: (value) => (
-                <div
-                    className="document-number-cell"
-                    onMouseEnter={(e) => {
-                        const element = e.currentTarget;
-                        const tooltip = element.querySelector('.tooltip');
-
-                        if (!tooltip || !value) return;
-
-                        const isOverflowing = element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight;
-
-                        if (isOverflowing) {
-                            tooltip.style.visibility = 'visible';
-                            tooltip.style.opacity = '1';
-                            const rect = element.getBoundingClientRect();
-
-                            // compute tooltip size (may be 0 if not yet rendered fully)
-                            const tooltipWidth = tooltip.offsetWidth || 200;
-                            const tooltipHeight = tooltip.offsetHeight || 40;
-
-                            // center tooltip horizontally over hovered element
-                            let left = rect.left + (rect.width - tooltipWidth) / 2;
-                            // clamp to viewport edges
-                            const windowWidth = window.innerWidth || document.documentElement.clientWidth;
-                            left = Math.max(8, Math.min(left, windowWidth - tooltipWidth - 8));
-
-                            // position tooltip above the element (preferred)
-                            let top = rect.top - tooltipHeight - 8;
-                            // if not enough space above, place below
-                            if (top < 8) {
-                                top = rect.bottom + 8;
-                            }
-
-                            // ensure tooltip uses fixed positioning and no CSS translate that would shift it
-                            tooltip.style.position = 'fixed';
-                            tooltip.style.transform = 'none';
-                            tooltip.style.marginTop = '0px';
-                            tooltip.style.zIndex = '10000';
-
-                            tooltip.style.top = `${top}px`;
-                            tooltip.style.left = `${left}px`;
-                        }
-                    }}
-                    onMouseLeave={(e) => {
-                        const tooltip = e.currentTarget.querySelector('.tooltip');
-                        if (tooltip) {
-                            tooltip.style.visibility = 'hidden';
-                            tooltip.style.opacity = '0';
-                        }
-                    }}
-                >
+                <Tooltip text={value} className="document-number-cell">
                     {value || 'N/A'}
-                    {value && (
-                        <div className="tooltip" style={{ visibility: 'hidden', opacity: '0' }}>
-                            {value}
-                        </div>
-                    )}
-                </div>
+                </Tooltip>
             )
         },
         {
@@ -285,39 +231,78 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
             label: 'Trích yếu',
             width: '250px',
             render: (value) => (
-                <div
-                    className="document-summary-cell"
-                    onMouseEnter={(e) => {
-                        const element = e.currentTarget;
-                        const tooltip = element.querySelector('.tooltip');
-
-                        if (!tooltip || !value) return;
-
-                        const isOverflowing = element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight;
-
-                        if (isOverflowing) {
-                            tooltip.style.visibility = 'visible';
-                            tooltip.style.opacity = '1';
-                            const rect = element.getBoundingClientRect();
-                            tooltip.style.left = `${rect.left}px`;
-                            tooltip.style.top = `${rect.top}px`;
-                        }
-                    }}
-                    onMouseLeave={(e) => {
-                        const tooltip = e.currentTarget.querySelector('.tooltip');
-                        if (tooltip) {
-                            tooltip.style.visibility = 'hidden';
-                            tooltip.style.opacity = '0';
-                        }
-                    }}
-                >
-                    <span>{value || 'N/A'}</span>
-                    {value && (
-                        <div className="tooltip" style={{ visibility: 'hidden', opacity: '0' }}>
-                            {value}
-                        </div>
-                    )}
+                <Tooltip text={value} className="document-summary-cell">
+                    {value || 'N/A'}
+                </Tooltip>
+            )
+        },
+        {
+            key: 'CreatedDate',
+            label: 'Ngày tạo',
+            width: '110px',
+            render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : 'N/A'
+        },
+        {
+            key: 'SignerInfo',
+            label: 'Người ký',
+            width: '180px',
+            render: (value, doc) => {
+                const fullname = doc.SignerFullname || '';
+                const position = doc.SignerPosition || '';
+                return fullname && position ? `${fullname} - ${position}` : (fullname || position || 'Chưa có');
+            }
+        },
+        {
+            key: 'GroupName',
+            label: 'Đơn vị ban hành',
+            width: '170px',
+            render: (value) => (
+                <Tooltip text={value} className="document-groupname-cell">
+                    {value || ''}
+                </Tooltip>
+            )
+        },
+        {
+            key: 'ExpiredDate',
+            label: 'Ngày hết hạn',
+            width: '110px',
+            render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : ''
+        },
+        {
+            key: 'actions',
+            label: 'Thao tác',
+            width: '100px',
+            render: (value, doc) => (
+                <div className="action-buttons-container">
+                    <button
+                        className="action-btn download-btn"
+                        onClick={() => handleDownload(doc.DocumentID, doc)}
+                        title="Tải file đính kèm"
+                    >
+                        ⬇️
+                    </button>
                 </div>
+            )
+        }
+    ] : [
+        {
+            key: 'DocumentNo',
+            label: 'Số hiệu',
+            width: '100px',
+            render: (value) => (
+                <Tooltip text={value} className="document-number-cell">
+                    {value || 'N/A'}
+                </Tooltip>
+            )
+        },
+        {
+            key: 'DocumentSummary',
+            label: 'Trích yếu',
+            width: '250px',
+            render: (value) => (
+                <Tooltip text={value} className="document-summary-cell">
+                    {value || 'N/A'}
+                </Tooltip>
             )
         },
         {
@@ -337,76 +322,10 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
             label: 'Đơn vị xử lý chính',
             width: '170px',
             render: (value) => (
-                <div
-                    className="document-groupname-cell"
-                    onMouseEnter={(e) => {
-                        const element = e.currentTarget;
-                        const tooltip = element.querySelector('.tooltip');
-
-                        if (!tooltip || !value) return;
-
-                        const isOverflowing = element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight;
-
-                        if (isOverflowing) {
-                            tooltip.style.visibility = 'visible';
-                            tooltip.style.opacity = '1';
-                            const rect = element.getBoundingClientRect();
-
-                            // compute tooltip size (may be 0 if not yet rendered fully)
-                            const tooltipWidth = tooltip.offsetWidth || 200;
-                            const tooltipHeight = tooltip.offsetHeight || 40;
-
-                            // center tooltip horizontally over hovered element
-                            let left = rect.left + (rect.width - tooltipWidth) / 2;
-                            // clamp to viewport edges
-                            const windowWidth = window.innerWidth || document.documentElement.clientWidth;
-                            left = Math.max(8, Math.min(left, windowWidth - tooltipWidth - 8));
-
-                            // position tooltip above the element (preferred)
-                            let top = rect.top - tooltipHeight - 8;
-                            // if not enough space above, place below
-                            if (top < 8) {
-                                top = rect.bottom + 8;
-                            }
-
-                            // ensure tooltip uses fixed positioning and no CSS translate that would shift it
-                            tooltip.style.position = 'fixed';
-                            tooltip.style.transform = 'none';
-                            tooltip.style.marginTop = '0px';
-                            tooltip.style.zIndex = '10000';
-
-                            tooltip.style.top = `${top}px`;
-                            tooltip.style.left = `${left}px`;
-                        }
-                    }}
-                    onMouseLeave={(e) => {
-                        const tooltip = e.currentTarget.querySelector('.tooltip');
-                        if (tooltip) {
-                            tooltip.style.visibility = 'hidden';
-                            tooltip.style.opacity = '0';
-                        }
-                    }}
-                >
+                <Tooltip text={value} className="document-groupname-cell">
                     {value || ''}
-                    {value && (
-                        <div className="tooltip" style={{ visibility: 'hidden', opacity: '0' }}>
-                            {value}
-                        </div>
-                    )}
-                </div>
+                </Tooltip>
             )
-        },
-        {
-            key: 'CompletedDate',
-            label: 'Ngày hoàn thành',
-            width: '100px',
-            render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : ''
-        },
-        {
-            key: 'UpdatedDate',
-            label: 'Ngày cập nhật',
-            width: '100px',
-            render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : ''
         },
         {
             key: 'ExpiredDate',
@@ -415,38 +334,11 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
             render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : ''
         },
         {
-            key: 'Status',
-            label: 'Trạng thái',
-            width: '100px',
-            render: (value, doc) => {
-                // derive status from CompletedDate presence: if CompletedDate exists => completed, else pending
-                const completedDate = doc?.CompletedDate;
-                const statusText = getStatusText(completedDate);
-                return (
-                    <span className={`status-badge ${getStatusClass(completedDate)}`}>
-                        {statusText}
-                    </span>
-                );
-            }
-        },
-        {
-            key: 'OutGoingDocs',
-            label: 'Văn bản trả lời',
-            width: '150px',
-            render: (value) => value || 'Chưa có'
-        },
-        {
-            key: 'ReviewNote',
-            label: 'Mô tả xử lý',
-            width: '150px',
-            render: (value) => value || 'Không có'
-        },
-        {
             key: 'actions',
             label: 'Thao tác',
-            width: '80px',
+            width: '100px',
             render: (value, doc) => (
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <div className="action-buttons-container">
                     <button
                         className="action-btn edit-btn"
                         onClick={() => handleEditClick(doc)}
@@ -455,7 +347,7 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
                         ✏️
                     </button>
                     <button
-                        className="action-btn edit-btn"
+                        className="action-btn download-btn"
                         onClick={() => handleDownload(doc.DocumentID, doc)}
                         title="Tải file đính kèm"
                     >
@@ -465,17 +357,6 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
             )
         }
     ];
-
-    const getStatusText = (completedDateOrStatus) => {
-        // If a CompletedDate exists (non-falsy), treat as completed
-        if (completedDateOrStatus) return 'Đã hoàn thành';
-        return 'Chưa hoàn thành';
-    };
-
-    const getStatusClass = (completedDateOrStatus) => {
-        if (completedDateOrStatus) return 'status-completed';
-        return 'status-pending';
-    };
 
     const handleEditClick = (document) => {
         setEditingDocument({
@@ -569,7 +450,11 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
         const fetchDocuments = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('http://localhost:3001/api/incoming-documents?view=MAIN_VIEW');
+                const endpoint = documentType === 'incoming'
+                    ? 'http://localhost:3001/api/incoming-documents?view=MAIN_VIEW'
+                    : 'http://localhost:3001/api/outgoing-documents';
+
+                const response = await fetch(endpoint);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -591,12 +476,7 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
         };
 
         fetchDocuments();
-    }, []);
-
-    // Reset current page when search term, department, year or stats filter changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, selectedDepartment, selectedYear, statsFilter]);
+    }, [documentType]);
 
     // Filter documents based on search term and department
     const filteredDocuments = documents.filter(doc => {
@@ -621,194 +501,23 @@ const DocumentsList = ({ searchTerm = '', selectedDepartment = '', selectedYear 
             return year === Number(selectedYear);
         })();
 
-        // Filter by statistics selection if provided
-        const matchesStatsFilter = (() => {
-            if (!statsFilter) return true;
-
-            switch (statsFilter) {
-                case 'leader_done':
-                    return !!(doc.AssignedReviewedFullname && String(doc.AssignedReviewedFullname).trim());
-                case 'leader_undone':
-                    return !(doc.AssignedReviewedFullname && String(doc.AssignedReviewedFullname).trim());
-                case 'office_processed':
-                    return !!doc.CompletedDate;
-                case 'office_unprocessed':
-                    return !doc.CompletedDate;
-                default:
-                    return true;
-            }
-        })();
-
-        return matchesSearch && matchesDepartment && matchesYear && matchesStatsFilter;
+        return matchesSearch && matchesDepartment && matchesYear;
     });
-
-    const totalPages = Math.max(1, Math.ceil(filteredDocuments.length / itemsPerPage));
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentDocuments = filteredDocuments.slice(startIndex, endIndex);
-
-    // Ensure currentPage doesn't exceed totalPages
-    useEffect(() => {
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(1);
-        }
-    }, [currentPage, totalPages]);
-
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
-    const Pagination = () => {
-        const pages = [];
-        const maxVisiblePages = 5;
-
-        // Ensure we have valid totalPages
-        if (totalPages <= 1) return null;
-
-        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-
-        if (currentPage > 1) {
-            pages.push(
-                <button
-                    key="prev"
-                    className="pagination-btn"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                >
-                    ‹
-                </button>
-            );
-        }
-
-        if (startPage > 1) {
-            pages.push(
-                <button
-                    key={1}
-                    className="pagination-btn"
-                    onClick={() => handlePageChange(1)}
-                >
-                    1
-                </button>
-            );
-            if (startPage > 2) {
-                pages.push(<span key="dots1" className="pagination-dots">...</span>);
-            }
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(
-                <button
-                    key={i}
-                    className={`pagination-btn ${currentPage === i ? 'active' : ''}`}
-                    onClick={() => handlePageChange(i)}
-                >
-                    {i}
-                </button>
-            );
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                pages.push(<span key="dots2" className="pagination-dots">...</span>);
-            }
-            pages.push(
-                <button
-                    key={totalPages}
-                    className="pagination-btn"
-                    onClick={() => handlePageChange(totalPages)}
-                >
-                    {totalPages}
-                </button>
-            );
-        }
-
-        if (currentPage < totalPages) {
-            pages.push(
-                <button
-                    key="next"
-                    className="pagination-btn"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                >
-                    ›
-                </button>
-            );
-        }
-
-        return (
-            <div className="pagination">
-                <div className="pagination-info">
-                    {filteredDocuments.length > 0 ? (
-                        <>
-                            Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredDocuments.length)} của {filteredDocuments.length} kết quả
-                            {searchTerm && ` (lọc từ ${documents.length} tổng cộng)`}
-                        </>
-                    ) : (
-                        searchTerm ? `Không tìm thấy kết quả cho "${searchTerm}"` : 'Không có dữ liệu'
-                    )}
-                </div>
-                <div className="pagination-controls">
-                    {pages}
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="documents-list">
-            <div className="documents-table">
-                <table>
-                    <thead>
-                        <tr>
-                            {tableColumns.map(column => (
-                                <th key={column.key} style={{ width: column.width }}>
-                                    {column.label}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan={tableColumns.length} className="loading-row">
-                                    <div className="loading-content">
-                                        <div className="loading-spinner"></div>
-                                        <span>Đang tải dữ liệu...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : error ? (
-                            <tr>
-                                <td colSpan={tableColumns.length} className="error-row">
-                                    <div className="error-content">
-                                        ❌ Lỗi: {error}
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : currentDocuments.length > 0 ? (
-                            currentDocuments.map(doc => (
-                                <tr key={doc.DocumentID || doc.id}>
-                                    {tableColumns.map(column => (
-                                        <td key={column.key}>
-                                            {column.render ? column.render(doc[column.key], doc) : (doc[column.key] || 'N/A')}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={tableColumns.length} className="no-data">
-                                    📋 Không có dữ liệu
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-            {!loading && <Pagination />}
+            <DataTable
+                columns={tableColumns}
+                data={filteredDocuments}
+                loading={loading}
+                error={error}
+                emptyMessage="Không có dữ liệu"
+                searchTerm={searchTerm}
+                enablePagination={true}
+                minItems={5}
+                maxItems={15}
+                headerHeight={0}
+            />
             <EditModal
                 showEditModal={showEditModal}
                 editingDocument={editingDocument}

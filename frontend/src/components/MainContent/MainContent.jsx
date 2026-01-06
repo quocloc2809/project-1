@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import './MainContent.css'
 import DocumentsList from '../DocumentsList/DocumentsList'
-import StatisticsTable from '../StatisticsTable/StatisticsTable'
+import WeeklyReport from '../WeeklyReport/WeeklyReport'
 import SearchBar from '../SearchBar/SearchBar'
 
-const MainContent = () => {
-    const [activeTab, setActiveTab] = useState('documents')
+const MainContent = ({ mode = 'documents' }) => {
+    const [activeTab, setActiveTab] = useState(mode === 'weeklyReport' ? 'weeklyReport' : 'incoming')
     const [searchTerm, setSearchTerm] = useState('')
     const [appliedSearchTerm, setAppliedSearchTerm] = useState('')
     const [selectedDepartment, setSelectedDepartment] = useState('')
     const [selectedYear, setSelectedYear] = useState('')
-    const [statsFilter, setStatsFilter] = useState('')
     const [departments, setDepartments] = useState([])
+    const [showFilterModal, setShowFilterModal] = useState(false)
+    const [isLoadingDepts, setIsLoadingDepts] = useState(true)
+
+    // Temporary filter states trong modal
+    const [tempDepartment, setTempDepartment] = useState('')
+    const [tempYear, setTempYear] = useState('')
 
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value)
@@ -26,23 +31,71 @@ const MainContent = () => {
         setAppliedSearchTerm('')
     }
 
-    const handleDepartmentChange = (e) => {
-        setSelectedDepartment(e.target.value)
+    const handleOpenFilterModal = () => {
+        // Copy giá trị hiện tại vào temp states
+        setTempDepartment(selectedDepartment)
+        setTempYear(selectedYear)
+        setShowFilterModal(true)
+    }
+
+    const handleApplyFilters = () => {
+        setSelectedDepartment(tempDepartment)
+        setSelectedYear(tempYear)
+        setShowFilterModal(false)
+    }
+
+    const handleCancelFilter = () => {
+        setShowFilterModal(false)
+    }
+
+    const handleExportReport = async () => {
+        try {
+            const params = new URLSearchParams()
+
+            // Thêm các tham số lọc nếu có
+            if (appliedSearchTerm && appliedSearchTerm.trim() !== '') {
+                params.append('searchTerm', appliedSearchTerm)
+            }
+            if (selectedDepartment && selectedDepartment !== '') {
+                params.append('departmentId', selectedDepartment)
+            }
+            if (selectedYear && selectedYear !== '') {
+                params.append('year', selectedYear)
+            }
+
+            const url = `http://localhost:3001/api/incoming-documents-mvc/export?${params.toString()}`
+
+            // Tạo link download
+            const link = document.createElement('a')
+            link.href = url
+            link.download = 'BaoCao_CongVanDen.xlsx'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        } catch (error) {
+            console.error('Lỗi xuất báo cáo:', error)
+            alert('Có lỗi xảy ra khi xuất báo cáo')
+        }
     }
 
     // Fetch departments list
     useEffect(() => {
         const fetchDepartments = async () => {
             try {
+                console.log('[MainContent] Fetching departments...')
                 const response = await fetch('http://localhost:3001/api/departments')
+                console.log('[MainContent] Departments response:', response.status)
                 if (response.ok) {
                     const data = await response.json()
+                    console.log('[MainContent] Departments data:', data)
                     if (data.success) {
                         setDepartments(data.data)
                     }
                 }
             } catch (error) {
-                console.error('Error fetching departments:', error)
+                console.error('[MainContent] Error fetching departments:', error)
+            } finally {
+                setIsLoadingDepts(false)
             }
         }
 
@@ -54,87 +107,90 @@ const MainContent = () => {
         setAppliedSearchTerm('')
         setSelectedDepartment('')
         setSelectedYear('')
-        setStatsFilter('')
+        setTempDepartment('')
+        setTempYear('')
+    }
+
+    // Kiểm tra có filter nào đang active không
+    const hasActiveFilters = selectedDepartment || selectedYear
+
+    console.log('[MainContent] Rendering with mode:', mode, 'isLoadingDepts:', isLoadingDepts)
+
+    if (isLoadingDepts) {
+        return (
+            <div className="main-content-wrapper">
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                    Đang tải...
+                </div>
+            </div>
+        )
     }
 
     return (
-        <div className="flex-1 p-6">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full backdrop-blur-sm bg-opacity-95">
-                <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 px-6 py-4 border-b border-purple-100">
-                    <div className="flex flex-wrap items-center gap-4 justify-between">
-                        <div className="flex items-center gap-4 flex-1 min-w-[450px]">
-                            <div className="inline-flex rounded-xl bg-white p-1.5 shadow-md border border-purple-200">
-                                <button
-                                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === 'documents'
-                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg transform scale-105'
-                                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
-                                        }`}
-                                    onClick={() => setActiveTab('documents')}
-                                >
-                                    📄 Danh sách công văn
-                                </button>
-                                <button
-                                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === 'statistics'
-                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg transform scale-105'
-                                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
-                                        }`}
-                                    onClick={() => setActiveTab('statistics')}
-                                >
-                                    📊 Thống kê trạng thái
-                                </button>
-                            </div>
-                            {activeTab === 'documents' && (
-                                <SearchBar
-                                    searchTerm={searchTerm}
-                                    onSearchChange={handleSearchChange}
-                                    onSearchSubmit={handleSearchSubmit}
-                                    onClearSearch={handleClearSearch}
-                                    placeholder="Tìm kiếm theo số hiệu hoặc trích yếu..."
-                                />
+        <div className="main-content-wrapper">
+            <div className="content-container">
+                <div className="content-header-gradient">
+                    <div className="header-content">
+                        <div className="header-left-section">
+                            {mode === 'documents' ? (
+                                <>
+                                    <div className="tabs-container">
+                                        <button
+                                            className={`tab-button ${activeTab === 'incoming' ? 'active' : 'inactive'}`}
+                                            onClick={() => setActiveTab('incoming')}
+                                        >
+                                            📥 Văn bản đến
+                                        </button>
+                                        <button
+                                            className={`tab-button ${activeTab === 'outgoing' ? 'active' : 'inactive'}`}
+                                            onClick={() => setActiveTab('outgoing')}
+                                        >
+                                            📤 Văn bản đi
+                                        </button>
+                                    </div>
+                                    <SearchBar
+                                        searchTerm={searchTerm}
+                                        onSearchChange={handleSearchChange}
+                                        onSearchSubmit={handleSearchSubmit}
+                                        onClearSearch={handleClearSearch}
+                                        placeholder="Tìm kiếm theo số hiệu hoặc trích yếu..."
+                                    />
+                                </>
+                            ) : (
+                                <div className="tabs-container">
+                                    <button className="tab-button active">
+                                        📝 Báo cáo tuần
+                                    </button>
+                                </div>
                             )}
                         </div>
-                        {activeTab === 'documents' && (
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <select
-                                    value={selectedDepartment}
-                                    onChange={handleDepartmentChange}
-                                    className="px-4 py-2 text-sm border-2 border-purple-200 rounded-lg bg-white hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm hover:shadow-md"
+                        {mode === 'documents' && (
+                            <div className="header-actions">
+                                <button
+                                    onClick={handleOpenFilterModal}
+                                    className={`filter-button ${hasActiveFilters ? 'active' : 'inactive'}`}
+                                    title="Mở bộ lọc"
                                 >
-                                    <option value="">🏢 Tất cả đơn vị</option>
-                                    {departments.map(dept => (
-                                        <option key={dept.GroupID} value={dept.GroupID}>
-                                            {dept.GroupName}
-                                        </option>
-                                    ))}
-                                </select>
+                                    🔍 Lọc dữ liệu
+                                    {hasActiveFilters && (
+                                        <span className="filter-badge">
+                                            {[selectedDepartment, selectedYear].filter(Boolean).length}
+                                        </span>
+                                    )}
+                                </button>
 
-                                <select
-                                    value={selectedYear}
-                                    onChange={(e) => setSelectedYear(e.target.value)}
-                                    className="px-4 py-2 text-sm border-2 border-purple-200 rounded-lg bg-white hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[120px] shadow-sm hover:shadow-md"
+                                <button
+                                    onClick={handleExportReport}
+                                    className="export-button"
+                                    title="Xuất báo cáo Excel"
                                 >
-                                    <option value="">📅 Tất cả năm</option>
-                                    {[2025, 2024, 2023, 2022, 2021].map(y => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
+                                    📊 Xuất báo cáo
+                                </button>
 
-                                <select
-                                    value={statsFilter}
-                                    onChange={(e) => setStatsFilter(e.target.value)}
-                                    className="px-4 py-2 text-sm border-2 border-purple-200 rounded-lg bg-white hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[200px] shadow-sm hover:shadow-md"
-                                >
-                                    <option value="">🔍 Không lọc</option>
-                                    <option value="leader_done">✅ Văn bản đã bút phê</option>
-                                    <option value="leader_undone">⏳ Văn bản chưa bút phê</option>
-                                    <option value="office_processed">✔️ Văn bản đã xử lí</option>
-                                    <option value="office_unprocessed">⚠️ Văn bản chưa xử lí</option>
-                                </select>
-
-                                {(searchTerm || appliedSearchTerm || selectedDepartment || selectedYear || statsFilter) && (
+                                {(searchTerm || appliedSearchTerm || hasActiveFilters) && (
                                     <button
                                         onClick={resetAllFilters}
-                                        className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 rounded-lg hover:from-pink-600 hover:via-rose-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 transform hover:scale-105"
+                                        className="reset-button"
                                         title="Làm mới tất cả bộ lọc"
                                     >
                                         🔄 Làm mới
@@ -145,9 +201,97 @@ const MainContent = () => {
                     </div>
                 </div>
 
-                {activeTab === 'documents' && <DocumentsList searchTerm={appliedSearchTerm} selectedDepartment={selectedDepartment} selectedYear={selectedYear} statsFilter={statsFilter} clearStatsFilter={() => setStatsFilter('')} />}
-                {activeTab === 'statistics' && <StatisticsTable onFilterSelect={(filterKey) => { setStatsFilter(filterKey); setActiveTab('documents'); }} />}
+                <div className="tab-content-wrapper">
+                    {mode === 'documents' ? (
+                        <>
+                            <div className={`tab-content ${activeTab === 'incoming' ? 'active' : ''}`}>
+                                <DocumentsList searchTerm={appliedSearchTerm} selectedDepartment={selectedDepartment} selectedYear={selectedYear} documentType="incoming" />
+                            </div>
+                            <div className={`tab-content ${activeTab === 'outgoing' ? 'active' : ''}`}>
+                                <DocumentsList searchTerm={appliedSearchTerm} selectedDepartment={selectedDepartment} selectedYear={selectedYear} documentType="outgoing" />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="tab-content active">
+                            <WeeklyReport />
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Filter Modal */}
+            {showFilterModal && (
+                <div className="filter-modal-overlay">
+                    <div className="filter-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="filter-modal-header">
+                            <h3 className="filter-modal-title">Bộ lọc dữ liệu</h3>
+                            <button
+                                onClick={handleCancelFilter}
+                                className="filter-modal-close"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="filter-modal-body">
+                            {/* Đơn vị */}
+                            <div className="filter-field">
+                                <label className="filter-label-wrapper">
+                                    Đơn vị
+                                </label>
+                                <div className="filter-select-wrapper">
+                                    <select
+                                        value={tempDepartment}
+                                        onChange={(e) => setTempDepartment(e.target.value)}
+                                        className="filter-select"
+                                    >
+                                        <option value="">Tất cả đơn vị</option>
+                                        {departments.map(dept => (
+                                            <option key={dept.GroupID} value={dept.GroupID}>
+                                                {dept.GroupName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Năm */}
+                            <div className="filter-field">
+                                <label className="filter-label-wrapper">
+                                    Năm
+                                </label>
+                                <div className="filter-select-wrapper">
+                                    <select
+                                        value={tempYear}
+                                        onChange={(e) => setTempYear(e.target.value)}
+                                        className="filter-select"
+                                    >
+                                        <option value="">Tất cả năm</option>
+                                        {[2025, 2024, 2023, 2022, 2021].map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button
+                                onClick={handleCancelFilter}
+                                className="filter-cancel-button"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleApplyFilters}
+                                className="filter-apply-button"
+                            >
+                                Áp dụng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

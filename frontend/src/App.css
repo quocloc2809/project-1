@@ -11,8 +11,7 @@ body {
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-attachment: fixed;
+  background: #f5f5f5;
 }
 
 .app {
@@ -24,7 +23,6 @@ body {
   width: 100%;
 }
 
-/* Khi zoom 110% trở lên (viewport nhỏ hơn ~1745px), cho phép scroll của web */
 @media (max-width: 1745px) {
   .app {
     overflow: visible;

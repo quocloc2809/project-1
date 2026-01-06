@@ -19,8 +19,10 @@ function App() {
   }, [])
 
   const handleLogin = (userData) => {
+    console.log('[App] handleLogin called with:', userData)
     setUser(userData)
     localStorage.setItem('authUser', JSON.stringify(userData))
+    console.log('[App] User state updated, should render MainContent')
   }
 
   const handleLogout = () => {
@@ -28,14 +30,18 @@ function App() {
     localStorage.removeItem('authUser')
   }
 
+  console.log('[App] Current user state:', user)
+
   if (!user) {
+    console.log('[App] No user, showing Login')
     return <Login onLogin={handleLogin} />
   }
 
+  console.log('[App] User logged in, rendering MainContent with mode:', user.mode)
   return (
     <div className="app">
       <Header user={user} onLogout={handleLogout} />
-      <MainContent />
+      <MainContent mode={user.mode} />
     </div>
   )
 }

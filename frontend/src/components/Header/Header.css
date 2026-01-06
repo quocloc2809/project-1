@@ -1,24 +1,84 @@
-/* Header */
 .header {
-    background: linear-gradient(90deg, #4a90e2 0%, #357abd 100%);
+    background: #4a90e2;
     color: white;
-    padding: 10px 20px;
+    padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
-    min-height: 50px;
 }
 
-.header h1 {
-    font-size: 18px;
-    font-weight: bold;
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-title {
+    margin-left: 8px;
+    font-size: 20px;
+    font-weight: 600;
 }
 
 .header-right {
     display: flex;
-    gap: 20px;
+    align-items: center;
+    gap: 24px;
     font-size: 14px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    min-width: 130px;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.user-name {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .user-name {
+        display: inline;
+    }
+}
+
+.logout-button {
+    background: #e74c3c;
+    padding: 8px 20px;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: #c0392b;
+}
+
+.login-button {
+    padding: 8px 16px;
+    background-color: white;
+    color: #4a90e2;
+    border: 1px solid #4a90e2;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background-color: #f0f0f0;
 }
 
 .header-right span {

@@ -4,6 +4,8 @@ import './Login.css'
 const Login = ({ onLogin }) => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
+    const [showModeSelection, setShowModeSelection] = useState(false)
+    const [userData, setUserData] = useState(null)
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -11,24 +13,37 @@ const Login = ({ onLogin }) => {
         e.preventDefault()
         setError('')
 
+        console.log('[Login] handleSubmit called with username:', username)
+
         if (!username || !password) {
             setError('Vui lòng nhập tên đăng nhập và mật khẩu.')
+            console.log('[Login] Missing username or password')
             return
         }
 
         setLoading(true)
+        console.log('[Login] Starting login API call...')
 
         try {
             const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+            console.log('[Login] API_BASE:', API_BASE)
+
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+
             const response = await fetch(`${API_BASE}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                signal: controller.signal
             })
 
+            clearTimeout(timeoutId)
+
             const data = await response.json()
+            console.log('[Login] API Response:', data)
 
             if (!response.ok || !data.success) {
                 setError(data.message || 'Đăng nhập thất bại. Vui lòng thử lại.')
@@ -36,14 +51,33 @@ const Login = ({ onLogin }) => {
                 return
             }
 
-            // Đăng nhập thành công
-            onLogin(data.data)
+            // Lưu user data từ API
+            console.log('[Login] User data from API:', data.data)
+            setUserData(data.data)
+            setShowModeSelection(true)
+            setLoading(false)
 
         } catch (error) {
-            console.error('Lỗi đăng nhập:', error)
-            setError('Không thể kết nối đến server. Vui lòng kiểm tra kết nối.')
+            console.error('[Login] Error:', error)
+            if (error.name === 'AbortError') {
+                setError('Request timeout - Server không phản hồi. Kiểm tra Auth Service.')
+            } else {
+                setError('Không thể kết nối đến server. Vui lòng kiểm tra kết nối.')
+            }
             setLoading(false)
         }
+    }
+
+    const handleModeSelection = (mode) => {
+        console.log('[Login] Mode selected:', mode)
+        console.log('[Login] userData:', userData)
+        console.log('[Login] username:', username)
+
+        const finalUserData = { ...userData, username, mode }
+        console.log('[Login] Sending to App:', finalUserData)
+
+        // Gửi đầy đủ user data + mode về App
+        onLogin(finalUserData)
     }
 
     return (
@@ -86,35 +120,55 @@ const Login = ({ onLogin }) => {
                         <h2>PORTALOFFICE</h2>
                     </div>
 
-                    <form className="login-form" onSubmit={handleSubmit}>
-                        {error && <div className="error">{error}</div>}
+                    {!showModeSelection ? (
+                        <form className="login-form" onSubmit={handleSubmit}>
+                            {error && <div className="error">{error}</div>}
 
-                        <div className="input-group">
-                            <span className="input-icon">✉</span>
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Tên đăng nhập"
-                                disabled={loading}
-                            />
+                            <div className="input-group">
+                                <span className="input-icon">✉</span>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Tên đăng nhập"
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <span className="input-icon">🔒</span>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Mật khẩu"
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            <button className="btn-login" type="submit" disabled={loading}>
+                                {loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP'}
+                            </button>
+                        </form>
+                    ) : (
+                        <div className="mode-selection">
+                            <h3 className="mode-title">Chọn chức năng</h3>
+                            <button
+                                className="mode-button documents-mode"
+                                onClick={() => handleModeSelection('documents')}
+                            >
+                                <span className="mode-icon">📄</span>
+                                <span className="mode-label">Tra cứu công văn</span>
+                            </button>
+                            <button
+                                className="mode-button weekly-mode"
+                                onClick={() => handleModeSelection('weeklyReport')}
+                            >
+                                <span className="mode-icon">📝</span>
+                                <span className="mode-label">Báo cáo tuần</span>
+                            </button>
                         </div>
-
-                        <div className="input-group">
-                            <span className="input-icon">🔒</span>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Mật khẩu"
-                                disabled={loading}
-                            />
-                        </div>
-
-                        <button className="btn-login" type="submit" disabled={loading}>
-                            {loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP'}
-                        </button>
-                    </form>
+                    )}
 
                     <div className="login-footer">
                         www.vanphongdientu.com.vn

@@ -1,0 +1,301 @@
+/* Weekly Report Container */
+.weekly-report {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    overflow: hidden;
+}
+
+/* Make sure DataTable takes remaining space */
+.weekly-report>.data-table-container {
+    flex: 1;
+    min-height: 0;
+}
+
+/* Header */
+.weekly-report-header {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+
+.add-report-btn {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.add-report-btn:hover {
+    background: #357abd;
+}
+
+/* Date Filter */
+.date-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-filter-btn {
+    padding: 10px 20px;
+    background: white;
+    border: 2px solid #e9ecef;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-filter-btn:hover {
+    border-color: #4a90e2;
+    background: #f8f9fa;
+}
+
+.date-range-text {
+    font-weight: 600;
+    color: #4a90e2;
+}
+
+.clear-date-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #dc3545;
+    background: white;
+    color: #dc3545;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clear-date-btn:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* Date Picker Modal */
+.date-picker-modal {
+    background: white;
+    width: 90%;
+    max-width: 450px;
+    animation: slideDown 0.3s ease;
+}
+
+.date-picker-modal .form-group {
+    margin-bottom: 20px;
+}
+
+.date-picker-modal .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.date-picker-modal input[type="date"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.date-picker-modal input[type="date"]:focus {
+    outline: none;
+    border-color: #4a90e2;
+}
+
+/* Table Removed - Using DataTable component */
+
+.text-center {
+    text-align: center;
+}
+
+/* Status Badge */
+.status-badge {
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.status-completed {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* Action Buttons */
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    margin: 0 5px;
+}
+
+.action-btn:hover {
+    opacity: 0.7;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 600px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 25px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #4a90e2;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 25px;
+    border-top: 1px solid #e9ecef;
+}
+
+.btn-cancel,
+.btn-save {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+}
+
+.btn-save {
+    background: #4a90e2;
+    color: white;
+}
+
+.btn-save:hover {
+    background: #357abd;
+}

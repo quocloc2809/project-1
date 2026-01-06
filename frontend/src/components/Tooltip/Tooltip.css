@@ -1,0 +1,45 @@
+.tooltip-container {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tooltip-popup {
+    position: fixed !important;
+    z-index: 10000 !important;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    max-width: 400px;
+    word-wrap: break-word;
+    white-space: normal;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    margin: 0 !important;
+    transform: none !important;
+}
+
+.tooltip-popup::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(0, 0, 0, 0.9);
+}
+
+/* Khi tooltip ở phía dưới, đổi arrow lên trên */
+.tooltip-popup.below::after {
+    bottom: auto;
+    top: -5px;
+    border-top: none;
+    border-bottom: 6px solid rgba(0, 0, 0, 0.9);
+}
